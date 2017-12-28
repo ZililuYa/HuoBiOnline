@@ -19,9 +19,16 @@ let app = new Vue({
     item: {}
   },
   methods: {
+    clear () {
+      this.item = {}
+    },
     Purchase () {
       // this.item.time = new Date().getTime()
-      app.data.push(this.item)
+      let myItem = {}
+      for (let i in this.item) {
+        myItem[i] = this.item[i]
+      }
+      app.data.push(myItem)
       data = app.data
       localStorage.setItem('USER', JSON.stringify(data))
       $('#myModal').modal('hide')
