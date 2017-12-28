@@ -1,0 +1,215 @@
+#!/usr/bin/env node
+
+/**
+ * Module dependencies.
+ */
+
+var app = require('../app');
+var debug = require('debug')('huobi:server');
+var http = require('http');
+// const moment = require('moment');
+const WebSocket = require('ws');
+const pako = require('pako');
+
+/**
+ * Get port from environment and store in Express.
+ */
+let huobi = ['btcusdt', 'bchusdt', 'dashusdt', 'ethusdt', 'zecusdt', 'ltcusdt', 'qtumusdt', 'xrpusdt', 'etcusdt', 'eosusdt', 'hsrusdt', 'omgusdt']
+var port = normalizePort(process.env.PORT || '3000');
+app.set('port', port);
+
+/**
+ * Create HTTP server.
+ */
+
+var server = http.createServer(app);
+
+let io = require('socket.io').listen(server);
+
+// let mySocket = ''
+let arr = []
+io.sockets.on('connection', function (socket) {
+  let id = ''
+  // mySocket = socket
+  console.log(socket.request.headers.referer)
+  // setInterval(function () {
+  //   socket.emit('news', {hello: Math.random() * 99999});
+  // }, 1000)
+  socket.on('isSocketId', function (i) {
+    console.log(i)
+    id = i
+    arr[i] = socket
+    let x = 0
+    for (let y in arr) {
+      x++
+    }
+    console.log('当前连接数：', x)
+    for (let y in arr) {
+      if (arr[y]) arr[y].emit('connectionNumber', x);
+    }
+  })
+
+  socket.on('disconnect', function () {
+    arr[id] = undefined
+    let array = []
+    for (let i in arr) {
+      if (arr[i]) array.push(arr[i])
+    }
+    arr = array
+    console.log('receive disconnect event');
+    // delete client;
+  })
+});
+
+var orderbook = {};
+/**
+ * Listen on provided port, on all network interfaces.
+ */
+
+server.listen(port);
+server.on('error', onError);
+server.on('listening', onListening);
+
+/**
+ * Normalize a port into a number, string, or false.
+ */
+
+function normalizePort (val) {
+  var port = parseInt(val, 10);
+
+  if (isNaN(port)) {
+    // named pipe
+    return val;
+  }
+
+  if (port >= 0) {
+    // port number
+    return port;
+  }
+
+  return false;
+}
+
+/**
+ * Event listener for HTTP server "error" event.
+ */
+
+function onError (error) {
+  if (error.syscall !== 'listen') {
+    throw error;
+  }
+
+  var bind = typeof port === 'string'
+    ? 'Pipe ' + port
+    : 'Port ' + port;
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case 'EACCES':
+      console.error(bind + ' requires elevated privileges');
+      process.exit(1);
+      break;
+    case 'EADDRINUSE':
+      console.error(bind + ' is already in use');
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+
+function onListening () {
+  var addr = server.address();
+  var bind = typeof addr === 'string'
+    ? 'pipe ' + addr
+    : 'port ' + addr.port;
+  debug('Listening on ' + bind);
+}
+
+
+/**
+ * HUOBI
+ * */
+
+const WS_URL = 'wss://api.huobi.pro/ws';
+
+function handle (data, i, name) {
+  // console.log('received', data.ch, 'data.ts', data.ts, 'crawler.ts', moment().format('x'));
+  var symbol = data.ch.split('.')[1];
+  var channel = data.ch.split('.')[2];
+  switch (channel) {
+    case 'depth':
+      orderbook[symbol] = data.tick;
+      break;
+    case 'kline':
+      // console.log('kline', data.tick);
+      data.id = i
+      data.name = name
+      // socket.emit('news', data);
+      // if (mySocket) mySocket.emit('news', data);
+      for (let i in arr) {
+        if (arr[i]) arr[i].emit('news', data);
+      }
+      // res.res
+      break;
+  }
+}
+
+function subscribe (i, name, ws) {
+  var symbols = [name];
+  // 订阅深度
+  // 谨慎选择合并的深度，ws每次推送全量的深度数据，若未能及时处理容易引起消息堆积并且引发行情延时
+  for (var symbol of symbols) {
+    ws.send(JSON.stringify({
+      "sub": `market.${symbol}.depth.step0`,
+      "id": `${symbol}`
+    }));
+  }
+  // 订阅K线
+  for (var symbol of symbols) {
+    ws.send(JSON.stringify({
+      "sub": `market.${symbol}.kline.1min`,
+      "id": `${symbol}`
+    }));
+  }
+}
+
+function init (i, name) {
+  var ws = new WebSocket(WS_URL);
+  ws.on('open', function () {
+    console.log('open');
+    subscribe(i, name, ws);
+  });
+  ws.on('message', function (data) {
+    var text = pako.inflate(data, {
+      to: 'string'
+    });
+    var msg = JSON.parse(text);
+    if (msg.ping) {
+      ws.send(JSON.stringify({
+        pong: msg.ping
+      }));
+    } else if (msg.tick) {
+      // console.log(msg);
+      handle(msg, i, name);
+    } else {
+      console.log(text);
+    }
+  });
+  ws.on('close', function () {
+    console.log('close');
+    init(i, name);
+  });
+  ws.on('error', function (err) {
+    console.log('error', err);
+    init(i, name);
+  });
+}
+
+for (let i in huobi) {
+  init(i, huobi[i]);
+}

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Huo Bi Online</title>
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <script type="text/javascript" src="/javascripts/socket.io.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="">
+    <div class="container" id="app">
+        <h3>{{message}}
+            <div class="pull-right">
+                <small>当前在线人数：{{connectionNumber}}</small>
+                <button class="btn btn-primary btn-sm" data-toggle="modal" data-target="#myModal">买入</button>
+            </div>
+        </h3>
+        <table class="table table-hover table-condensed" v-if="loading">
+            <thead>
+            <tr>
+                <th>Name</th>
+                <th>买入价格</th>
+                <th>当前价格</th>
+                <th>数量</th>
+                <th>买入花费</th>
+                <th>当前市值</th>
+                <th>约收益</th>
+                <th width="1"></th>
+            </tr>
+            <tbody>
+            <tr v-for="(i, x) in data">
+                <td>{{i ? i.id.replace('usdt', '').toLocaleUpperCase() : ''}} {{calcMoney()}}</td>
+                <td>{{i ? i.usdt : ''}}</td>
+                <td class="info">{{i ? usd[i.id] : ''}}</td>
+                <td>{{i ? i.num : ''}}</td>
+                <td>{{i ? i.num*i.usdt : ''}}</td>
+                <td>{{usd[i.id] ? (i.num*usd[i.id]).toFixed(4) : ''}}</td>
+                <td :class="calcMoneyClass(usd[i.id], i)" >{{calcMoney(usd[i.id], i)}}</td>
+                <td><button class="btn btn-danger btn-xs" @click="remove(x)">删除</button></td>
+            </tr>
+            </thead>
+        </table>
+        <hr>
+        <table class="table table-hover" v-if="loading">
+            <thead>
+            <tr>
+                <th>Name</th>
+                <th>开(open)</th>
+                <th>收(close)</th>
+                <th>高(high)</th>
+                <th>低(low)</th>
+                <th>数量(amount)</th>
+                <th>总数(count)</th>
+                <th>指标(vol)</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr v-for="i in list">
+                <td>{{i?i.name:''}}</td>
+                <td>{{i&&i.tick?i.tick.open:''}}</td>
+                <td class="info">{{i&&i.tick?i.tick.close:''}}</td>
+                <td>{{i&&i.tick?i.tick.high:''}}</td>
+                <td>{{i&&i.tick?i.tick.low:''}}</td>
+                <td>{{i&&i.tick?i.tick.amount.toFixed(4):''}}</td>
+                <td>{{i&&i.tick?i.tick.count:''}}</td>
+                <td>{{i&&i.tick?i.tick.vol.toFixed(4):''}}</td>
+            </tr>
+            </tbody>
+        </table>
+        <!-- Modal -->
+        <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="myModalLabel">买入</h4>
+                    </div>
+                    <div class="modal-body">
+                        <form class="form-horizontal">
+                            <div class="form-group">
+                                <label for="inputEmail3" class="col-sm-2 control-label">请选择</label>
+                                <div class="col-sm-10">
+                                    <select class="form-control" v-model="item.id">
+                                        <option v-for="i in usdt" :value="i">{{i.replace('usdt', '').toLocaleUpperCase()}}</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="inputPassword3" class="col-sm-2 control-label">购入价格</label>
+                                <div class="col-sm-10">
+                                    <input type="text" v-model="item.usdt" class="form-control" placeholder="USDT">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="inputPassword3" class="col-sm-2 control-label">购入数量</label>
+                                <div class="col-sm-10">
+                                    <input type="text" v-model="item.num" class="form-control">
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">取消</button>
+                        <button type="button" class="btn btn-primary" @click="Purchase">保存</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript" src="/javascripts/vue.min.js"></script>
+<script type="text/javascript" src="/javascripts/jquery.min.js"></script>
+<script type="text/javascript" src="/js/bootstrap.js"></script>
+<script type="text/javascript" src="/javascripts/app.js"></script>
+</body>
+</html>
+
