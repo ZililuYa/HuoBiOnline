@@ -15,7 +15,7 @@ const pako = require('pako');
  * Get port from environment and store in Express.
  */
 let huobi = ['btcusdt', 'bchusdt', 'dashusdt', 'ethusdt', 'zecusdt', 'ltcusdt', 'qtumusdt', 'xrpusdt', 'etcusdt', 'eosusdt', 'hsrusdt', 'omgusdt']
-var port = normalizePort(process.env.PORT || '3000');
+var port = normalizePort(process.env.PORT || '1998');
 app.set('port', port);
 
 /**
