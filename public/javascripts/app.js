@@ -20,9 +20,9 @@ let app = new Vue({
   },
   methods: {
     Purchase () {
-      this.item.time = new Date().getTime()
-      data.push(this.item)
-      app.data = data
+      // this.item.time = new Date().getTime()
+      app.data.push(this.item)
+      data = app.data
       localStorage.setItem('USER', JSON.stringify(data))
       $('#myModal').modal('hide')
     },
