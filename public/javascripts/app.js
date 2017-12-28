@@ -20,12 +20,10 @@ let app = new Vue({
   },
   methods: {
     Purchase () {
-      console.log(this.item)
       this.item.time = new Date().getTime()
       data.push(this.item)
       app.data = data
       localStorage.setItem('USER', JSON.stringify(data))
-      console.log(data)
       $('#myModal').modal('hide')
     },
     remove (x) {
@@ -69,7 +67,6 @@ socket.on('connectionNumber', function (data) {
 socket.on('news', function (data) {
   this.loading = false
   app.usd[data.name] = data.tick.close
-  console.log(app.usd)
   data.name = data.name.replace('usdt', '').toLocaleUpperCase()
   list[parseInt(data.id)] = data
   // app.list = list
@@ -78,7 +75,6 @@ socket.on('news', function (data) {
     app.list.push(list[i])
   }
   this.loading = true
-  // console.log(app.list)
   // let num = data.tick.close * a - (a * b)
   // document.getElementById('show').innerHTML = JSON.stringify(data)
   // document.getElementById('showNum').innerHTML = num.toFixed(4) + ' ---- ' + (num * 7.2).toFixed(4)
